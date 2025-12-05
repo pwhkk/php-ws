@@ -5,7 +5,7 @@ const { Buffer } = require('buffer');
 const { exec } = require('child_process');
 const { WebSocket, createWebSocketStream } = require('ws');
 
-// 读取配置文件
+// 读取配置文件（只用其他参数，不保存端口）
 let config = {};
 try {
   const raw = fs.readFileSync('config.json', 'utf-8');
@@ -61,7 +61,7 @@ wss.on('connection', ws => {
   }).on('error', () => {});
 });
 
-// 自动选择端口（50000–65000）
+// 自动选择端口（50000–65000，不写回配置）
 function findAvailablePort(start, end, callback) {
   let port = start;
   function tryPort() {
@@ -87,10 +87,11 @@ findAvailablePort(50000, 65000, (err, port) => {
     httpServer.listen(port, () => {
       console.log(`🚀 Server is running on port ${port}`);
 
-      // 更新 config.json
-      config.PORT = port;
-      fs.writeFileSync('config.json', JSON.stringify(config, null, 2));
-      console.log("✅ 配置文件已更新:", config);
+      // 打印订阅地址（带上实际端口）
+      const vlessURL = `vless://${UUID}@${DOMAIN}:${port}?encryption=none&security=none&type=ws&host=${DOMAIN}&path=%2F#${NAME}`;
+      const base64Content = Buffer.from(vlessURL).toString('base64');
+      console.log("📌 Subscription URL (raw):", vlessURL);
+      console.log("📌 Subscription (base64):", base64Content);
 
       // 自动访问保活
       if (AUTO_ACCESS && DOMAIN) {
