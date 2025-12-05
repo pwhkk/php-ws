@@ -16,11 +16,11 @@ try {
 
 // 使用配置里的变量
 const UUID = config.UUID || '55e8ca56-8a0a-4486-b3f9-b9b0d46638a9';
-const DOMAIN = config.DOMAIN || 'rs00858054.oners.jp';
+const DOMAIN = config.DOMAIN || '';
 const AUTO_ACCESS = config.AUTO_ACCESS || false;
 const SUB_PATH = config.SUB_PATH || 'ccc';
 const NAME = config.NAME || 'Vls';
-const PORT = config.PORT || 57026;
+let PORT = config.PORT || 0;   // 如果没有配置或冲突，设为 0 自动分配
 const WEB_PATH = config.WEB_PATH || 'web';
 
 // HTTP 服务
@@ -62,10 +62,17 @@ wss.on('connection', ws => {
   }).on('error', () => {});
 });
 
-// 自动访问保活
+// 自动选择端口并写回配置
 httpServer.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  const actualPort = httpServer.address().port;
+  console.log(`Server is running on port ${actualPort}`);
 
+  // 更新 config.json
+  config.PORT = actualPort;
+  fs.writeFileSync('config.json', JSON.stringify(config, null, 2));
+  console.log("配置文件已更新:", config);
+
+  // 自动访问保活
   if (AUTO_ACCESS && DOMAIN) {
     const autoAccessWeb = () => {
       exec(
