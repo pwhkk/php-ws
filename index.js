@@ -16,11 +16,10 @@ try {
 
 // 使用配置里的变量
 const UUID = config.UUID || '55e8ca56-8a0a-4486-b3f9-b9b0d46638a9';
-const DOMAIN = config.DOMAIN || '';
+const DOMAIN = config.DOMAIN || 'pp.pwhh.dpdns.org';
 const AUTO_ACCESS = config.AUTO_ACCESS || false;
 const SUB_PATH = config.SUB_PATH || 'ccc';
 const NAME = config.NAME || 'Vls';
-let PORT = config.PORT || 0;   // 如果没有配置或冲突，设为 0 自动分配
 const WEB_PATH = config.WEB_PATH || 'web';
 
 // HTTP 服务
@@ -62,27 +61,50 @@ wss.on('connection', ws => {
   }).on('error', () => {});
 });
 
-// 自动选择端口并写回配置
-httpServer.listen(PORT, () => {
-  const actualPort = httpServer.address().port;
-  console.log(`Server is running on port ${actualPort}`);
+// 自动选择端口（50000–65000）
+function findAvailablePort(start, end, callback) {
+  let port = start;
+  function tryPort() {
+    const tester = net.createServer()
+      .once('error', () => {
+        port++;
+        if (port > end) callback(new Error('No available ports'));
+        else tryPort();
+      })
+      .once('listening', () => {
+        tester.close(() => callback(null, port));
+      })
+      .listen(port);
+  }
+  tryPort();
+}
 
-  // 更新 config.json
-  config.PORT = actualPort;
-  fs.writeFileSync('config.json', JSON.stringify(config, null, 2));
-  console.log("配置文件已更新:", config);
+findAvailablePort(50000, 65000, (err, port) => {
+  if (err) {
+    console.error(err.message);
+    process.exit(1);
+  } else {
+    httpServer.listen(port, () => {
+      console.log(`🚀 Server is running on port ${port}`);
 
-  // 自动访问保活
-  if (AUTO_ACCESS && DOMAIN) {
-    const autoAccessWeb = () => {
-      exec(
-        `curl -s "https://${DOMAIN}/${WEB_PATH}" > /dev/null`,
-        { shell: '/bin/bash' },
-        (error) => {
-          if (error) console.error('Auto access failed:', error.message);
-        }
-      );
-    };
-    setInterval(autoAccessWeb, 20000);
+      // 更新 config.json
+      config.PORT = port;
+      fs.writeFileSync('config.json', JSON.stringify(config, null, 2));
+      console.log("✅ 配置文件已更新:", config);
+
+      // 自动访问保活
+      if (AUTO_ACCESS && DOMAIN) {
+        const autoAccessWeb = () => {
+          exec(
+            `curl -s "https://${DOMAIN}/${WEB_PATH}" > /dev/null`,
+            { shell: '/bin/bash' },
+            (error) => {
+              if (error) console.error('Auto access failed:', error.message);
+            }
+          );
+        };
+        setInterval(autoAccessWeb, 20000);
+      }
+    });
   }
 });
