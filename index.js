@@ -16,11 +16,11 @@ try {
 
 // 使用配置里的变量
 const UUID = config.UUID || '55e8ca56-8a0a-4486-b3f9-b9b0d46638a9';
-const DOMAIN = config.DOMAIN || 'pp.pwhh.dpdns.org';
+const DOMAIN = config.DOMAIN || 'rs00858054.oners.jp';
 const AUTO_ACCESS = config.AUTO_ACCESS || false;
 const SUB_PATH = config.SUB_PATH || 'ccc';
 const NAME = config.NAME || 'Vls';
-const PORT = config.PORT || 37000;
+const PORT = config.PORT || 57026;
 const WEB_PATH = config.WEB_PATH || 'web';
 
 // HTTP 服务
